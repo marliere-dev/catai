@@ -12,24 +12,15 @@ import { In, Repository } from 'typeorm';
 
 import { LocationService } from '../location/location.service';
 import { StorageService } from '../storage/storage.service';
-import { UserRole } from '../users/user-role.enum';
-import { User } from '../users/user.entity';
+import { User, UserRole } from '../users/user.entity';
 import { CollectionRequest } from './collection-request.entity';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { ListAvailableRequestsQuery } from './dto/list-available-requests.query';
 import { RequestImage } from './request-image.entity';
-import { RequestStatus } from './request-status.enum';
+import { AvailableRequest, RequestStatus, UploadedImage } from './request.types';
 
 const DEFAULT_RADIUS_KM = 10;
 const AVAILABLE_LIMIT = 200;
-
-export interface UploadedImage {
-  buffer: Buffer;
-  mimetype: string;
-  size: number;
-}
-
-export type AvailableRequest = CollectionRequest & { distanceKm: number };
 
 @Injectable()
 export class RequestsService {

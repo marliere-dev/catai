@@ -8,7 +8,7 @@ import { AppModule } from '../src/app.module';
 import { FakeFirebaseTokenValidator } from '../src/auth/__fakes__/fake-firebase-token-validator';
 import { FirebaseAdminTokenValidator } from '../src/auth/firebase-admin-token-validator';
 import { StorageService } from '../src/storage/storage.service';
-import { UserRole } from '../src/users/user-role.enum';
+import { UserRole } from '../src/users/user.entity';
 
 const OWNER_TOKEN = 'owner-token';
 const COLLECTOR_TOKEN = 'collector-token';

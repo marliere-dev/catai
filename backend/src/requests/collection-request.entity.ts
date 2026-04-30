@@ -9,10 +9,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { MaterialType } from './material-type.enum';
-import { QuantityEstimate } from './quantity-estimate.enum';
 import { RequestImage } from './request-image.entity';
-import { RequestStatus } from './request-status.enum';
+import { MaterialType, QuantityEstimate, RequestStatus } from './request.types';
 
 @Entity('collection_requests')
 @Index(['status'])

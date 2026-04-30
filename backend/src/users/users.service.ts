@@ -2,7 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { FirebaseUser } from '../auth/firebase-token-validator';
+import { FirebaseUser } from '../auth/auth.types';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { User } from './user.entity';
 

@@ -2,8 +2,7 @@ import { ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
 import { UpdateMeDto } from './dto/update-me.dto';
-import { UserRole } from './user-role.enum';
-import { User } from './user.entity';
+import { User, UserRole } from './user.entity';
 import { UsersService } from './users.service';
 
 class InMemoryUsersRepository {

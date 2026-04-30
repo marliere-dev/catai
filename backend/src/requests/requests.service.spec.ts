@@ -11,16 +11,13 @@ import { FindOperator, Repository } from 'typeorm';
 
 import { LocationService } from '../location/location.service';
 import { StorageService } from '../storage/storage.service';
-import { UserRole } from '../users/user-role.enum';
-import { User } from '../users/user.entity';
+import { User, UserRole } from '../users/user.entity';
 import { CollectionRequest } from './collection-request.entity';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { ListAvailableRequestsQuery } from './dto/list-available-requests.query';
-import { MaterialType } from './material-type.enum';
-import { QuantityEstimate } from './quantity-estimate.enum';
 import { RequestImage } from './request-image.entity';
-import { RequestStatus } from './request-status.enum';
-import { RequestsService, UploadedImage } from './requests.service';
+import { MaterialType, QuantityEstimate, RequestStatus, UploadedImage } from './request.types';
+import { RequestsService } from './requests.service';
 
 const WEBP_BUFFER = Buffer.from([
   0x52, 0x49, 0x46, 0x46, 0x1a, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x20,

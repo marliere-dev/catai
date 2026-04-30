@@ -2,7 +2,7 @@ import { Body, Controller, ForbiddenException, Get, Patch, UseGuards } from '@ne
 
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentFirebaseUser } from '../auth/decorators/current-firebase-user.decorator';
-import { FirebaseUser } from '../auth/firebase-token-validator';
+import { FirebaseUser } from '../auth/auth.types';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { User } from './user.entity';
 import { UsersService } from './users.service';
