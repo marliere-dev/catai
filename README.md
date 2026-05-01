@@ -2,21 +2,24 @@
 
 Free and open-source app that connects establishments with recyclables to collectors who pick them up.
 
-This repository will host the full Cataí monorepo. During the MVP stage everything lives in subfolders so the projects can be split into separate repos later.
+This repository hosts the Cataí monorepo. During the MVP stage everything lives in subfolders so the projects can be split into separate repos later.
 
 ## Structure
 
 ```
 catai/
-├── INSTRUCTIONS.md     # product spec (Portuguese — source of truth for scope)
-├── backend/            # NestJS API (active development)
-├── mobile/             # Expo / React Native app — not yet scaffolded
-└── frontend/           # Astro landing page — not yet scaffolded
+├── INSTRUCTIONS.md                # product spec (Portuguese — source of truth)
+├── backend/                       # NestJS API
+├── frontend/                      # Astro landing page (https://catai.marliere.dev)
+├── mobile/                        # Expo / React Native app — not yet scaffolded
+└── infra/server/catai-landing/    # Docker stack templates for the home server
 ```
 
 ## Getting started
 
-The backend is the only project under active development. See [`backend/README.md`](./backend/README.md) for setup instructions.
+- Backend: [`backend/README.md`](./backend/README.md).
+- Landing: [`frontend/README.md`](./frontend/README.md).
+- Server stack: [`infra/server/catai-landing/README.md`](./infra/server/catai-landing/README.md).
 
 ## Contributing
 

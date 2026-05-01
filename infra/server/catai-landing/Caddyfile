@@ -1,0 +1,20 @@
+:80 {
+	handle {
+		root * /var/www/landing
+		file_server
+		encode gzip
+
+		# Assets versionados (CSS/JS com hash) podem cachear forte
+		@assets path /_astro/* /assets/*
+		header @assets Cache-Control "public, max-age=604800, immutable"
+
+		# HTML não cacheia (permite iterar sem invalidar)
+		@html path /index.html /
+		header @html Cache-Control "no-cache, must-revalidate"
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

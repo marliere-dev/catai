@@ -1,0 +1,48 @@
+---
+const items = [
+  { st: 'pronto', label: 'Backend', desc: 'API, autenticação, lógica de solicitações.', tag: 'pronto' },
+  { st: 'wip', label: 'App mobile', desc: 'React Native. Em desenvolvimento ativo.', tag: 'em andamento' },
+  { st: 'soon', label: 'Beta fechado', desc: 'Em breve. Inscreva-se pra ser avisado.', tag: 'em breve' },
+];
+---
+<section class="px-6 py-24">
+  <div class="max-w-[1100px] mx-auto">
+    <div class="grid md:grid-cols-[180px_1fr] gap-12 mb-12">
+      <div class="text-xs uppercase tracking-[0.14em] text-ink-soft font-medium pt-3">§4 &nbsp; onde estamos</div>
+      <h2 class="font-serif text-[clamp(36px,5vw,56px)] font-normal tracking-tight text-ink m-0 leading-[1.05]">
+        Status atual. <span class="italic text-sage-deep">Honesto.</span>
+      </h2>
+    </div>
+    <div>
+      {items.map((it, i) => (
+        <div class={`grid grid-cols-[60px_1fr_auto] gap-6 items-center py-7 border-t border-ink/20 ${i === items.length - 1 ? 'border-b' : ''}`}>
+          <div class="flex items-center justify-center">
+            {it.st === 'pronto' && (
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="10" class="fill-sage-deep" />
+              </svg>
+            )}
+            {it.st === 'wip' && (
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="10" fill="none" stroke-width="1.6" class="stroke-sage-deep" />
+                <path d="M11 1 A10 10 0 0 0 11 21 Z" class="fill-sage-deep" />
+              </svg>
+            )}
+            {it.st === 'soon' && (
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="10" fill="none" stroke-width="1.6" stroke-dasharray="3 3" class="stroke-sage-deep" />
+              </svg>
+            )}
+          </div>
+          <div>
+            <div class="font-serif text-[28px] text-ink tracking-tight">{it.label}</div>
+            <div class="text-[15px] text-ink-soft mt-1 leading-[1.5]">{it.desc}</div>
+          </div>
+          <div class={`text-xs px-3 py-1.5 rounded-full font-medium tracking-wide lowercase whitespace-nowrap text-ink ${
+            it.st === 'pronto' ? 'bg-sage' : it.st === 'wip' ? 'bg-soft' : 'border border-dashed border-ink/20'
+          }`}>{it.tag}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

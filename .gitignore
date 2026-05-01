@@ -39,3 +39,6 @@ coverage/
 
 # Postgres data volume
 **/postgres-data/
+
+# Local prompts and scratchpads
+/landing-page-prompt.md

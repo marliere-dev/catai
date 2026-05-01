@@ -1,0 +1,26 @@
+name: catai-landing
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: catai-caddy
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./landing:/var/www/landing:ro
+    networks:
+      - catai-net
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: catai-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    depends_on:
+      - caddy
+    networks:
+      - catai-net
+
+networks:
+  catai-net:
+    driver: bridge
