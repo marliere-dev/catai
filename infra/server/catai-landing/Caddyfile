@@ -1,6 +1,14 @@
 :80 {
+	# Form submissions go to the Go collector.
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy collector:8081
+	}
+
 	handle {
 		root * /var/www/landing
+		# Serve URLs without .html suffix (/feedback → /feedback.html).
+		try_files {path} {path}.html
 		file_server
 		encode gzip
 
@@ -9,7 +17,7 @@
 		header @assets Cache-Control "public, max-age=604800, immutable"
 
 		# HTML não cacheia (permite iterar sem invalidar)
-		@html path /index.html /
+		@html path /index.html /feedback.html /
 		header @html Cache-Control "no-cache, must-revalidate"
 	}
 

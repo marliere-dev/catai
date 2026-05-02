@@ -1,10 +1,26 @@
 name: catai-landing
 
 services:
+  collector:
+    image: catai-landing-collector:${COLLECTOR_TAG:-v0.1.0}
+    container_name: catai-collector
+    restart: unless-stopped
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      RATE_LIMIT_PER_IP_PER_HOUR: ${RATE_LIMIT_PER_IP_PER_HOUR:-10}
+      JSONL_PATH: /data/contacts.jsonl
+    volumes:
+      - ./data:/data
+    networks:
+      - catai-net
+
   caddy:
     image: caddy:2-alpine
     container_name: catai-caddy
     restart: unless-stopped
+    depends_on:
+      - collector
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./landing:/var/www/landing:ro

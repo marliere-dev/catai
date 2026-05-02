@@ -7,11 +7,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-export enum UserRole {
-  OWNER = 'OWNER',
-  COLLECTOR = 'COLLECTOR',
-}
-
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -26,9 +21,6 @@ export class User {
 
   @Column({ unique: true })
   email!: string;
-
-  @Column({ type: 'enum', enum: UserRole, nullable: true })
-  role!: UserRole | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;

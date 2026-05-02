@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Cataí — recicláveis sem desperdício, catadores sem rota perdida</title>
+<meta name="description" content="Cataí é um app open-source que conecta estabelecimentos com recicláveis disponíveis a catadores. Sem pagamento, sem marketplace, sem rastreio."/>
+<meta property="og:title" content="Cataí — recicláveis sem desperdício, catadores sem rota perdida"/>
+<meta property="og:description" content="App open-source que conecta estabelecimentos com recicláveis a catadores."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap" rel="stylesheet"/>
+
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    transition: background 0.35s ease, color 0.35s ease;
+  }
+  * { box-sizing: border-box; }
+  ::selection { background: rgba(110,142,107,0.35); }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="sections.jsx"></script>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+  const { Hero, WhatIs, HowItWorks, WhyOpenSource, Status, Help, Footer, PALETTES } = window.CataiSections;
+
+  function App() {
+    const c = PALETTES.salvia;
+
+    React.useEffect(() => {
+      document.body.style.background = c.paper;
+      document.body.style.color = c.ink;
+    }, []);
+
+    return (
+      <div style={{ background: c.paper, color: c.ink, minHeight: '100vh' }}>
+        <Hero c={c}/>
+        <WhatIs c={c}/>
+        <HowItWorks c={c}/>
+        <WhyOpenSource c={c}/>
+        <Status c={c}/>
+        <Help c={c}/>
+        <Footer c={c}/>
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+</body>
+</html>

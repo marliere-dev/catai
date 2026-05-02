@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Cataí — Quero ajudar</title>
+<meta name="description" content="Mande um feedback pro Cataí. Catadores, cooperativas, designers, devs ou apoiadores — quem chega junto fortalece o projeto."/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet"/>
+
+<style>
+  :root {
+    --paper: #FAF8F4;
+    --soft:  #EDE9DD;
+    --ink:   #2D3A2E;
+    --ink-soft: #5C6B5E;
+    --sage:  #B8D4B5;
+    --sage-deep: #6E8E6B;
+    --line:  rgba(45,58,46,0.10);
+    --rule:  rgba(45,58,46,0.18);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  ::selection { background: rgba(110,142,107,0.35); }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  .wrap { max-width: 640px; margin: 0 auto; padding: 64px 24px 96px; }
+
+  .back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--ink-soft); text-decoration: none;
+    margin-bottom: 56px; opacity: 0.85;
+  }
+  .back:hover { color: var(--ink); }
+
+  h1 {
+    font-family: "Fraunces", serif; font-weight: 400;
+    font-size: clamp(40px, 6vw, 64px); line-height: 1.05;
+    letter-spacing: -0.03em; margin: 0 0 20px;
+  }
+  h1 em { font-style: italic; color: var(--sage-deep); }
+
+  .lede {
+    font-size: 17px; line-height: 1.6; color: var(--ink-soft);
+    margin: 0 0 48px; max-width: 540px;
+  }
+
+  form { display: flex; flex-direction: column; gap: 22px; }
+
+  label { display: block; }
+  .label-text {
+    display: block; margin-bottom: 8px;
+    font-size: 12px; letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--ink-soft); font-weight: 500;
+  }
+  .req { color: var(--sage-deep); }
+
+  input[type="text"], input[type="email"], select, textarea {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    background: var(--paper); color: var(--ink);
+    border: 1.5px solid var(--line); outline: none;
+    font-family: inherit; font-size: 15px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--sage-deep); background: #fff;
+  }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.55; }
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%235C6B5E' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>");
+    background-repeat: no-repeat; background-position: right 14px center;
+    padding-right: 40px;
+  }
+
+  .helper { font-size: 13px; color: var(--ink-soft); margin-top: 6px; }
+
+  .honeypot {
+    position: absolute; left: -9999px; width: 1px; height: 1px;
+    opacity: 0; pointer-events: none;
+  }
+
+  button[type="submit"] {
+    margin-top: 8px; padding: 14px 22px; border-radius: 999px;
+    background: var(--ink); color: var(--paper);
+    border: none; cursor: pointer;
+    font-family: inherit; font-size: 15px; font-weight: 500;
+    letter-spacing: -0.1px;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+  button[type="submit"]:hover:not(:disabled) { transform: translateY(-1px); }
+  button[type="submit"]:disabled { opacity: 0.5; cursor: progress; }
+
+  .error-box {
+    display: none; padding: 12px 16px; border-radius: 10px;
+    background: #FBEDE6; color: #B5704D; font-size: 14px;
+    border: 1px solid rgba(181,112,77,0.25);
+  }
+  .error-box.visible { display: block; }
+
+  .success {
+    display: none; padding: 32px; border-radius: 18px;
+    background: var(--soft); border: 1px solid var(--line);
+    text-align: center;
+  }
+  .success.visible { display: block; }
+  .success-title {
+    font-family: "Fraunces", serif; font-size: 26px; font-weight: 500;
+    margin: 0 0 12px; color: var(--ink);
+  }
+  .success-body { color: var(--ink-soft); font-size: 15px; line-height: 1.55; margin: 0; }
+  .success-ref { display: block; margin-top: 18px; font-size: 12px; opacity: 0.7; font-family: ui-monospace, monospace; }
+
+  form.sent { display: none; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <a href="/" class="back">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+    voltar
+  </a>
+
+  <h1>Chega <em>junto</em>.</h1>
+  <p class="lede">
+    Conta quem você é, de onde fala, como a gente te encontra, e o que tem na cabeça.
+    A gente lê tudo e responde pelo canal que você passar.
+  </p>
+
+  <form id="form" novalidate>
+    <label>
+      <span class="label-text">Nome <span class="req">*</span></span>
+      <input type="text" name="nome" required autocomplete="name" placeholder="Maria"/>
+    </label>
+
+    <label>
+      <span class="label-text">Você é <span class="req">*</span></span>
+      <select name="papel" required>
+        <option value="catador">catador / catadora</option>
+        <option value="cooperativa">cooperativa ou organização</option>
+        <option value="designer">designer</option>
+        <option value="dev">dev</option>
+        <option value="testes">quero testar em campo</option>
+        <option value="simpatizante">só apoiando o projeto</option>
+      </select>
+    </label>
+
+    <label>
+      <span class="label-text">Cidade <span class="req">*</span></span>
+      <input type="text" name="cidade" required placeholder="São Paulo, Recife, Belém…"/>
+    </label>
+
+    <label>
+      <span class="label-text">Como te chamamos <span class="req">*</span></span>
+      <input type="text" name="contato" required placeholder="email, whatsapp, telegram, instagram…"/>
+      <span class="helper">Qualquer canal que você responde. Sem julgamento — só pra gente conseguir voltar.</span>
+    </label>
+
+    <label>
+      <span class="label-text">Mensagem (opcional)</span>
+      <textarea name="mensagem" placeholder="O que você quer contar pra gente."></textarea>
+    </label>
+
+    <input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"/>
+
+    <div class="error-box" id="error-box">Não foi possível enviar agora. Tenta de novo em alguns minutos.</div>
+
+    <button type="submit" id="submit-btn">Mandar feedback</button>
+  </form>
+
+  <div class="success" id="success">
+    <div class="success-title">Recebido. Obrigado.</div>
+    <p class="success-body">A gente vai voltar pelo canal que você passou. Sem newsletter, sem marketing.</p>
+    <span class="success-ref" id="success-ref"></span>
+  </div>
+</main>
+
+<script>
+  (function () {
+    var form = document.getElementById('form');
+    var btn  = document.getElementById('submit-btn');
+    var errBox = document.getElementById('error-box');
+    var success = document.getElementById('success');
+    var successRef = document.getElementById('success-ref');
+
+    // Pre-select papel from ?papel=… in the URL
+    var params = new URLSearchParams(window.location.search);
+    var paperParam = (params.get('papel') || '').toLowerCase();
+    var select = form.querySelector('[name="papel"]');
+    if (paperParam) {
+      var match = Array.prototype.find.call(select.options, function (o) { return o.value === paperParam; });
+      if (match) select.value = paperParam;
+    }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      errBox.classList.remove('visible');
+      btn.disabled = true;
+      var originalLabel = btn.textContent;
+      btn.textContent = 'Enviando…';
+
+      var data = Object.fromEntries(new FormData(form).entries());
+
+      try {
+        var res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+          var body = {};
+          try { body = await res.json(); } catch (_) {}
+          if (res.status === 429) {
+            errBox.textContent = 'Muitos envios desse mesmo lugar. Tenta daqui a pouco.';
+          } else if (body.field) {
+            errBox.textContent = 'Confere o campo "' + body.field + '" — ' + (body.error || 'inválido') + '.';
+          } else {
+            errBox.textContent = 'Não foi possível enviar agora. Tenta de novo em alguns minutos.';
+          }
+          errBox.classList.add('visible');
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+          return;
+        }
+        var ok = await res.json();
+        form.classList.add('sent');
+        success.classList.add('visible');
+        if (ok.ref) successRef.textContent = 'protocolo: ' + ok.ref;
+      } catch (err) {
+        errBox.textContent = 'Sem conexão? Tenta de novo daqui a pouco.';
+        errBox.classList.add('visible');
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+      }
+    });
+  })();
+</script>
+</body>
+</html>

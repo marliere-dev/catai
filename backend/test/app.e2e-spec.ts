@@ -8,7 +8,6 @@ import { AppModule } from '../src/app.module';
 import { FakeFirebaseTokenValidator } from '../src/auth/__fakes__/fake-firebase-token-validator';
 import { FirebaseAdminTokenValidator } from '../src/auth/firebase-admin-token-validator';
 import { StorageService } from '../src/storage/storage.service';
-import { UserRole } from '../src/users/user.entity';
 
 const OWNER_TOKEN = 'owner-token';
 const COLLECTOR_TOKEN = 'collector-token';
@@ -126,33 +125,23 @@ describe('Cataí end-to-end', () => {
     await request(app.getHttpServer()).get('/me').set('Authorization', 'Bearer ghost').expect(401);
   });
 
-  it('creates the internal user on first /me call and lets it pick a role', async () => {
+  it('creates the internal user on first /me call and lets it edit the name', async () => {
     const meResponse = await request(app.getHttpServer())
       .get('/me')
       .set('Authorization', `Bearer ${OWNER_TOKEN}`)
       .expect(200);
 
     expect(meResponse.body.email).toBe('owner@example.com');
-    expect(meResponse.body.role).toBeNull();
     expect(meResponse.body.firebaseUid).toBeUndefined();
 
     const updated = await request(app.getHttpServer())
       .patch('/me')
       .set('Authorization', `Bearer ${OWNER_TOKEN}`)
-      .send({ name: 'Bar do Zé', role: UserRole.OWNER })
+      .send({ name: 'Bar do Zé' })
       .expect(200);
 
-    expect(updated.body.role).toBe(UserRole.OWNER);
     expect(updated.body.name).toBe('Bar do Zé');
     expect(updated.body.firebaseUid).toBeUndefined();
-  });
-
-  it('rejects role-set when the email is not verified', async () => {
-    await request(app.getHttpServer())
-      .patch('/me')
-      .set('Authorization', `Bearer ${UNVERIFIED_TOKEN}`)
-      .send({ role: UserRole.OWNER })
-      .expect(403);
   });
 
   it('allows updating the name without a verified email', async () => {
@@ -161,14 +150,6 @@ describe('Cataí end-to-end', () => {
       .set('Authorization', `Bearer ${UNVERIFIED_TOKEN}`)
       .send({ name: 'Pendente' })
       .expect(200);
-  });
-
-  it('locks the role once it is chosen', async () => {
-    await request(app.getHttpServer())
-      .patch('/me')
-      .set('Authorization', `Bearer ${OWNER_TOKEN}`)
-      .send({ role: UserRole.COLLECTOR })
-      .expect(409);
   });
 
   it('rejects POST /requests when the image is missing', async () => {
@@ -214,17 +195,18 @@ describe('Cataí end-to-end', () => {
     createdRequestId = response.body.id;
   });
 
-  it('rejects collectors trying to create requests', async () => {
+  it('any verified user can create requests (no role enforced)', async () => {
     await request(app.getHttpServer())
       .patch('/me')
       .set('Authorization', `Bearer ${COLLECTOR_TOKEN}`)
-      .send({ name: 'Carlos Catador', role: UserRole.COLLECTOR })
+      .send({ name: 'Carlos Catador' })
       .expect(200);
 
-    await createRequest(app, COLLECTOR_TOKEN, {
+    const response = await createRequest(app, COLLECTOR_TOKEN, {
       materialType: 'PLASTIC',
       quantityEstimate: 'MEDIUM',
-    }).expect(403);
+    }).expect(201);
+    expect(response.body.status).toBe('OPEN');
   });
 
   it('rejects unverified users trying to create requests', async () => {
@@ -259,7 +241,7 @@ describe('Cataí end-to-end', () => {
     await request(app.getHttpServer())
       .patch('/me')
       .set('Authorization', `Bearer ${OWNER_B_TOKEN}`)
-      .send({ name: 'Outro Dono', role: UserRole.OWNER })
+      .send({ name: 'Outro Dono' })
       .expect(200);
 
     await request(app.getHttpServer())
@@ -316,7 +298,7 @@ describe('Cataí end-to-end', () => {
     await request(app.getHttpServer())
       .patch('/me')
       .set('Authorization', 'Bearer second-collector-token')
-      .send({ name: 'Outro Catador', role: UserRole.COLLECTOR })
+      .send({ name: 'Outro Catador' })
       .expect(200);
 
     await request(app.getHttpServer())

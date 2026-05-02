@@ -11,7 +11,7 @@ import { FindOperator, Repository } from 'typeorm';
 
 import { LocationService } from '../location/location.service';
 import { StorageService } from '../storage/storage.service';
-import { User, UserRole } from '../users/user.entity';
+import { User } from '../users/user.entity';
 import { CollectionRequest } from './collection-request.entity';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { ListAvailableRequestsQuery } from './dto/list-available-requests.query';
@@ -212,7 +212,6 @@ function buildUser(overrides: Partial<User>): User {
     firebaseUid: overrides.firebaseUid ?? 'uid-fallback',
     name: overrides.name ?? 'Test',
     email: overrides.email ?? 'x@example.com',
-    role: overrides.role ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
     disabledAt: null,
@@ -253,17 +252,9 @@ const baseDto: CreateRequestDto = {
 
 describe('RequestsService', () => {
   describe('create', () => {
-    it('rejects creators that are not OWNER', async () => {
-      const { service } = buildService();
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
-      await expect(service.create(collector, baseDto, buildFile())).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
-    });
-
     it('rejects when image is missing (image is required, §159 + critério #4)', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       await expect(service.create(owner, baseDto, undefined)).rejects.toBeInstanceOf(
         BadRequestException,
       );
@@ -271,7 +262,7 @@ describe('RequestsService', () => {
 
     it('rejects oversize images (rule §457 #8)', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       const big = buildFile(WEBP_BUFFER, 'image/webp', 600 * 1024);
       await expect(service.create(owner, baseDto, big)).rejects.toBeInstanceOf(
         PayloadTooLargeException,
@@ -280,7 +271,7 @@ describe('RequestsService', () => {
 
     it('rejects MIME types outside the allow-list', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       await expect(
         service.create(owner, baseDto, buildFile(WEBP_BUFFER, 'image/png', WEBP_BUFFER.length)),
       ).rejects.toBeInstanceOf(UnsupportedMediaTypeException);
@@ -288,7 +279,7 @@ describe('RequestsService', () => {
 
     it('persists request + image on the happy path', async () => {
       const { service, repo, images, storage } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       const created = await service.create(owner, baseDto, buildFile());
       expect(created.status).toBe(RequestStatus.OPEN);
       expect(created.image).toBeTruthy();
@@ -300,7 +291,7 @@ describe('RequestsService', () => {
 
     it('rolls back the request when image upload fails', async () => {
       const { service, repo, images, storage } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       storage.failNextPut = true;
       await expect(service.create(owner, baseDto, buildFile())).rejects.toThrow('R2 unavailable');
       expect(repo.raw()).toHaveLength(0);
@@ -309,7 +300,7 @@ describe('RequestsService', () => {
 
     it('deletes the R2 object if the DB row save fails after a successful PUT', async () => {
       const { service, repo, storage, images } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       const originalSave = images.save.bind(images);
       images.save = jest
         .fn()
@@ -324,7 +315,7 @@ describe('RequestsService', () => {
 
     it('rejects invalid coordinates', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       await expect(
         service.create(owner, { ...baseDto, latitude: 999 }, buildFile()),
       ).rejects.toThrow();
@@ -334,7 +325,7 @@ describe('RequestsService', () => {
   describe('attachImage / removeImage', () => {
     async function buildOpenRequest() {
       const ctx = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       const created = await ctx.service.create(owner, baseDto, buildFile());
       return { ...ctx, owner, request: created };
     }
@@ -342,10 +333,10 @@ describe('RequestsService', () => {
     it('attachImage rejects a non-creator', async () => {
       const { service, request } = await buildOpenRequest();
       // remove the existing image first
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       await service.removeImage(owner, request.id);
 
-      const stranger = buildUser({ id: 'u-s', role: UserRole.OWNER });
+      const stranger = buildUser({ id: 'u-s' });
       await expect(service.attachImage(stranger, request.id, buildFile())).rejects.toBeInstanceOf(
         ForbiddenException,
       );
@@ -361,7 +352,7 @@ describe('RequestsService', () => {
     it('attachImage rejects when request is not OPEN', async () => {
       const { service, owner, request } = await buildOpenRequest();
       await service.removeImage(owner, request.id);
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
+      const collector = buildUser({ id: 'u-c' });
       await service.reserve(collector, request.id);
       await expect(service.attachImage(owner, request.id, buildFile())).rejects.toBeInstanceOf(
         ConflictException,
@@ -386,20 +377,10 @@ describe('RequestsService', () => {
   });
 
   describe('reserve', () => {
-    it('rejects users who are not COLLECTOR', async () => {
-      const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const created = await service.create(owner, baseDto, buildFile());
-      const otherOwner = buildUser({ id: 'u-o2', role: UserRole.OWNER });
-      await expect(service.reserve(otherOwner, created.id)).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
-    });
-
     it('moves an OPEN request to RESERVED with reserved_until set', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collector = buildUser({ id: 'u-c' });
       const created = await service.create(owner, baseDto, buildFile());
       const reserved = await service.reserve(collector, created.id);
       expect(reserved.status).toBe(RequestStatus.RESERVED);
@@ -410,9 +391,9 @@ describe('RequestsService', () => {
 
     it('rejects a second reservation while the first is active', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collectorA = buildUser({ id: 'u-c-a', role: UserRole.COLLECTOR });
-      const collectorB = buildUser({ id: 'u-c-b', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collectorA = buildUser({ id: 'u-c-a' });
+      const collectorB = buildUser({ id: 'u-c-b' });
       const created = await service.create(owner, baseDto, buildFile());
       await service.reserve(collectorA, created.id);
       await expect(service.reserve(collectorB, created.id)).rejects.toBeInstanceOf(
@@ -422,9 +403,9 @@ describe('RequestsService', () => {
 
     it('lets only one of two concurrent reservations succeed (atomic update)', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collectorA = buildUser({ id: 'u-c-a', role: UserRole.COLLECTOR });
-      const collectorB = buildUser({ id: 'u-c-b', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collectorA = buildUser({ id: 'u-c-a' });
+      const collectorB = buildUser({ id: 'u-c-b' });
       const created = await service.create(owner, baseDto, buildFile());
 
       const results = await Promise.allSettled([
@@ -440,8 +421,8 @@ describe('RequestsService', () => {
 
     it('rejects reserving an EXPIRED request', async () => {
       const { service, repo } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collector = buildUser({ id: 'u-c' });
       const created = await service.create(owner, baseDto, buildFile());
       created.status = RequestStatus.EXPIRED;
       created.expiredAt = new Date();
@@ -454,9 +435,9 @@ describe('RequestsService', () => {
 
     it('reverts a stale reservation to OPEN before reserving (lazy expiry)', async () => {
       const { service, repo } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collectorA = buildUser({ id: 'u-c-a', role: UserRole.COLLECTOR });
-      const collectorB = buildUser({ id: 'u-c-b', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collectorA = buildUser({ id: 'u-c-a' });
+      const collectorB = buildUser({ id: 'u-c-b' });
       const created = await service.create(owner, baseDto, buildFile());
       const reserved = await service.reserve(collectorA, created.id);
 
@@ -472,9 +453,9 @@ describe('RequestsService', () => {
   describe('complete', () => {
     it('rejects completion by a non-reserving collector who is not the creator', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collectorA = buildUser({ id: 'u-c-a', role: UserRole.COLLECTOR });
-      const collectorB = buildUser({ id: 'u-c-b', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collectorA = buildUser({ id: 'u-c-a' });
+      const collectorB = buildUser({ id: 'u-c-b' });
       const created = await service.create(owner, baseDto, buildFile());
       await service.reserve(collectorA, created.id);
       await expect(service.complete(collectorB, created.id)).rejects.toBeInstanceOf(
@@ -484,8 +465,8 @@ describe('RequestsService', () => {
 
     it('allows the reserving collector to complete', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collector = buildUser({ id: 'u-c' });
       const created = await service.create(owner, baseDto, buildFile());
       await service.reserve(collector, created.id);
       const done = await service.complete(collector, created.id);
@@ -495,8 +476,8 @@ describe('RequestsService', () => {
 
     it('allows the creator to complete a reserved request (§220-222)', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collector = buildUser({ id: 'u-c' });
       const created = await service.create(owner, baseDto, buildFile());
       await service.reserve(collector, created.id);
       const done = await service.complete(owner, created.id);
@@ -505,8 +486,8 @@ describe('RequestsService', () => {
 
     it('asks storage to delete the image on completion', async () => {
       const { service, storage } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collector = buildUser({ id: 'u-c' });
       const created = await service.create(owner, baseDto, buildFile());
       const key = storage.put[0];
       await service.reserve(collector, created.id);
@@ -516,8 +497,8 @@ describe('RequestsService', () => {
 
     it('rejects completion of an OPEN request', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collector = buildUser({ id: 'u-c' });
       const created = await service.create(owner, baseDto, buildFile());
       await expect(service.complete(collector, created.id)).rejects.toBeInstanceOf(
         ConflictException,
@@ -528,8 +509,8 @@ describe('RequestsService', () => {
   describe('cancel', () => {
     it('rejects cancellation by a non-creator', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const otherOwner = buildUser({ id: 'u-o2', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
+      const otherOwner = buildUser({ id: 'u-o2' });
       const created = await service.create(owner, baseDto, buildFile());
       await expect(service.cancel(otherOwner, created.id)).rejects.toBeInstanceOf(
         ForbiddenException,
@@ -538,7 +519,7 @@ describe('RequestsService', () => {
 
     it('cancels an OPEN request and asks storage to delete the image', async () => {
       const { service, storage } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       const created = await service.create(owner, baseDto, buildFile());
       const key = storage.put[0];
       const cancelled = await service.cancel(owner, created.id);
@@ -548,7 +529,7 @@ describe('RequestsService', () => {
 
     it('still cancels even if storage.deleteImage fails (best-effort)', async () => {
       const { service, storage } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
+      const owner = buildUser({ id: 'u-o' });
       const created = await service.create(owner, baseDto, buildFile());
       storage.failNextDelete = true;
       const cancelled = await service.cancel(owner, created.id);
@@ -557,8 +538,8 @@ describe('RequestsService', () => {
 
     it('rejects cancelling a RESERVED request (§782 critério #10)', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collector = buildUser({ id: 'u-c' });
       const created = await service.create(owner, baseDto, buildFile());
       await service.reserve(collector, created.id);
       await expect(service.cancel(owner, created.id)).rejects.toBeInstanceOf(ConflictException);
@@ -566,8 +547,8 @@ describe('RequestsService', () => {
 
     it('rejects cancelling a COMPLETED request', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collector = buildUser({ id: 'u-c' });
       const created = await service.create(owner, baseDto, buildFile());
       await service.reserve(collector, created.id);
       await service.complete(collector, created.id);
@@ -582,16 +563,10 @@ describe('RequestsService', () => {
       radiusKm: 5,
     };
 
-    it('rejects callers that are not COLLECTOR', async () => {
-      const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      await expect(service.listAvailable(owner, query)).rejects.toBeInstanceOf(ForbiddenException);
-    });
-
     it('returns OPEN requests within the radius, sorted by proximity', async () => {
       const { service } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collector = buildUser({ id: 'u-c', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collector = buildUser({ id: 'u-c' });
       const near = await service.create(
         owner,
         { ...baseDto, latitude: -23.5505, longitude: -46.6333 },
@@ -617,9 +592,9 @@ describe('RequestsService', () => {
 
     it('omits requests whose reservation has expired only after lazy reversion', async () => {
       const { service, repo } = buildService();
-      const owner = buildUser({ id: 'u-o', role: UserRole.OWNER });
-      const collectorA = buildUser({ id: 'u-c-a', role: UserRole.COLLECTOR });
-      const collectorB = buildUser({ id: 'u-c-b', role: UserRole.COLLECTOR });
+      const owner = buildUser({ id: 'u-o' });
+      const collectorA = buildUser({ id: 'u-c-a' });
+      const collectorB = buildUser({ id: 'u-c-b' });
       const created = await service.create(owner, baseDto, buildFile());
       const reserved = await service.reserve(collectorA, created.id);
       reserved.reservedUntil = new Date(Date.now() - 1_000);

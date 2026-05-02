@@ -1,8 +1,7 @@
-import { ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
 import { UpdateMeDto } from './dto/update-me.dto';
-import { User, UserRole } from './user.entity';
+import { User } from './user.entity';
 import { UsersService } from './users.service';
 
 class InMemoryUsersRepository {
@@ -62,7 +61,6 @@ describe('UsersService', () => {
 
       expect(created.firebaseUid).toBe('fb-1');
       expect(created.email).toBe('a@example.com');
-      expect(created.role).toBeNull();
       expect(repo.snapshot()).toHaveLength(1);
     });
 
@@ -98,7 +96,7 @@ describe('UsersService', () => {
   });
 
   describe('update', () => {
-    it('sets the role on the first call', async () => {
+    it('updates the name', async () => {
       const { service } = buildService();
       const user = await service.ensureFromFirebase({
         uid: 'fb-1',
@@ -106,35 +104,20 @@ describe('UsersService', () => {
         emailVerified: true,
       });
 
-      const updated = await service.update(user, { role: UserRole.OWNER } as UpdateMeDto);
-      expect(updated.role).toBe(UserRole.OWNER);
-    });
-
-    it('rejects changing the role once it is set', async () => {
-      const { service } = buildService();
-      const user = await service.ensureFromFirebase({
-        uid: 'fb-1',
-        email: 'a@example.com',
-        emailVerified: true,
-      });
-      await service.update(user, { role: UserRole.OWNER } as UpdateMeDto);
-
-      await expect(
-        service.update(user, { role: UserRole.COLLECTOR } as UpdateMeDto),
-      ).rejects.toBeInstanceOf(ConflictException);
-    });
-
-    it('allows updating the name without touching the role', async () => {
-      const { service } = buildService();
-      const user = await service.ensureFromFirebase({
-        uid: 'fb-1',
-        email: 'a@example.com',
-        emailVerified: true,
-      });
-      await service.update(user, { role: UserRole.OWNER } as UpdateMeDto);
       const updated = await service.update(user, { name: 'Alice' } as UpdateMeDto);
       expect(updated.name).toBe('Alice');
-      expect(updated.role).toBe(UserRole.OWNER);
+    });
+
+    it('is a no-op when no fields are passed', async () => {
+      const { service } = buildService();
+      const user = await service.ensureFromFirebase({
+        uid: 'fb-1',
+        email: 'a@example.com',
+        emailVerified: true,
+      });
+      const before = user.name;
+      const after = await service.update(user, {} as UpdateMeDto);
+      expect(after.name).toBe(before);
     });
   });
 });
