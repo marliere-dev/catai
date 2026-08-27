@@ -6,7 +6,7 @@
 	}
 
 	handle {
-		root * /var/www/landing
+		root * /var/www/releases/{$SITE_TAG}
 		# Serve URLs without .html suffix (/feedback → /feedback.html).
 		try_files {path} {path}.html
 		file_server

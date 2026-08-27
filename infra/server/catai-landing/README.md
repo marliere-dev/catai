@@ -1,80 +1,82 @@
-# catai-landing — Docker stack
+# Deploy da landing do Cataí no Oracle
 
-Stack que serve a landing do Cataí em `https://catai.marliere.dev` e processa o form `/feedback`.
+A landing e o collector usam o runner `prod-aci`. O site estático é publicado
+em releases por SHA; o collector é construído nativamente para ARM64.
 
-Composição:
-
-- **`catai-collector`** (Go service, porta 8081 interna) — recebe `POST /api/contact`, valida, grava em `./data/contacts.jsonl`, notifica um chat do Telegram. Source em `frontend/collector/`.
-- **`catai-caddy`** (caddy:2-alpine) — serve estáticos de `./landing/`, faz reverse proxy de `/api/contact` pro collector.
-- **`catai-cloudflared`** — tunnel reverso pra Cloudflare → `catai.marliere.dev`.
-
-Tudo na bridge `catai-net`. Sem porta exposta no host.
-
-## Setup inicial (uma vez)
-
-```bash
-cp .env.example .env
-nano .env     # cole TUNNEL_TOKEN, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
-
-mkdir -p landing data
-
-# O collector roda como UID 65532 (nonroot/distroless) e precisa escrever em ./data/.
-# Como `mkdir` cria como o user logado, ajusta o ownership pra evitar 500 no primeiro POST:
-docker run --rm -v "$PWD/data:/data" alpine chown -R 65532:65532 /data
-
-# Build da imagem do collector direto no daemon do servidor
-# (do host de dev, com SSH pro notebook configurado):
-cd <repo>/frontend
-./scripts/build-collector.sh v0.1.0
-
-# Sobe o stack
-ssh notebook 'cd /home/fernando/projetos/catai-landing && docker compose -f docker-compose.prod.yml up -d'
-
-# Verifica
-ssh notebook 'docker logs catai-cloudflared 2>&1 | grep -i "Connection registered"'
-ssh notebook 'docker logs catai-collector | tail'
+```text
+GitHub Actions → oracle-deployctl → collector ARM64 + release estática
+                                      ↓
+Cloudflare Tunnel → NPM → catai-caddy → landing/collector
 ```
 
-## Atualizar o site
+## Segurança e recursos
 
-A pasta `./landing/` é montada read-only. Pra publicar mudança no HTML:
+- O runner não acessa o socket Docker diretamente.
+- Somente `oracle-deployctl deploy catai <SHA> <WORKSPACE>` é permitido.
+- Compose, Caddyfile, `.env` e dados ficam em `/srv/apps/catai` sob controle
+  administrativo.
+- O build usa no máximo 1 CPU e 3 GB e não concorre com outro deploy.
+- Falha de health check restaura as tags anteriores.
+
+## Preparação única do GitHub
+
+1. Transferir `catai` para `marliere-dev`.
+2. Adicionar somente o repositório ao runner group `oracle-production`.
+3. Como ele é público, habilitar acesso público no grupo, mas restringir ao
+   workflow `.github/workflows/deploy.yml@refs/heads/main`.
+4. Criar Environment `production`, limitado a `main`, com aprovação.
+5. Proteger `main`; pull requests nunca devem executar o job no Oracle.
+
+## Configuração única no Oracle
 
 ```bash
-cd <repo>/frontend
-./scripts/deploy.sh
+sudo install -o root -g root -m 0644 \
+  infra/server/catai-landing/docker-compose.prod.yml \
+  /srv/apps/catai/compose.yml
+sudo install -o root -g root -m 0644 \
+  infra/server/catai-landing/Caddyfile /srv/apps/catai/Caddyfile
+sudo install -o root -g root -m 0600 \
+  infra/server/catai-landing/.env.example /srv/apps/catai/.env
+sudoedit /srv/apps/catai/.env
 ```
 
-## Atualizar o collector
+Preencher `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`. Ajustar opcionalmente
+`RATE_LIMIT_PER_IP_PER_HOUR`. As tags ficam em `.release.env`, gerenciado pelo
+dispatcher.
+
+No Nginx Proxy Manager, criar:
+
+```text
+catai.marliere.dev → http://catai-caddy:80
+```
+
+Não publicar portas e não iniciar outro `cloudflared`.
+
+## Deploy normal
+
+Push em `main` executa testes do collector e valida os HTMLs. Após aprovação de
+`production`, o runner chama:
 
 ```bash
-cd <repo>/frontend
-./scripts/build-collector.sh v0.1.1
-# bump COLLECTOR_TAG no .env do servidor pra v0.1.1
-ssh notebook 'cd /home/fernando/projetos/catai-landing && docker compose -f docker-compose.prod.yml up -d collector'
+sudo /usr/local/sbin/oracle-deployctl \
+  deploy catai "$GITHUB_SHA" "$GITHUB_WORKSPACE"
 ```
 
-## Operações
+O dispatcher constrói `catai-landing-collector:<SHA>`, copia `frontend/site`
+para `/srv/apps/catai/releases/<SHA>`, atualiza tags e valida `/api/health` e a
+landing. Mantém cinco releases estáticas e três imagens do collector.
+
+## Operação e diagnóstico
 
 ```bash
-# Status
-docker compose -f docker-compose.prod.yml ps
+sudo docker compose \
+  --project-directory /srv/apps/catai \
+  --env-file /srv/apps/catai/.env \
+  --env-file /srv/apps/catai/.release.env \
+  -f /srv/apps/catai/compose.yml ps
 
-# Logs
-docker logs -f catai-collector
-docker logs -f catai-caddy
-docker logs -f catai-cloudflared
-
-# Ver os leads gravados em JSONL
-ssh notebook 'tail -f /home/fernando/projetos/catai-landing/data/contacts.jsonl'
-
-# Smoke test do collector (de fora)
-curl -X POST https://catai.marliere.dev/api/contact \
-  -H 'Content-Type: application/json' \
-  -d '{"nome":"Teste","papel":"simpatizante","cidade":"Curitiba","contato":"@teste"}'
-# → {"ref":"REQ-..."}
+journalctl -t oracle-deployctl -n 100 --no-pager
+docker logs catai-collector --tail 100
+docker logs catai-caddy --tail 100
+find /srv/apps/catai/releases -mindepth 1 -maxdepth 1 -type d
 ```
-
-## Quando trocar token do tunnel ou do Telegram
-
-1. Edita `.env` no servidor com o novo valor.
-2. `docker compose -f docker-compose.prod.yml up -d` (recria só o que mudou).

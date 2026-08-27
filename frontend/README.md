@@ -11,7 +11,7 @@ frontend/
 ├── site/                ← o que vai pro servidor
 │   ├── index.html       ← entrypoint, importa React/ReactDOM/Babel via unpkg
 │   └── sections.jsx     ← Hero, WhatIs, HowItWorks, WhyOpenSource, Status, Help, Footer
-└── scripts/deploy.sh    ← rsync site/ → notebook:catai-landing/landing/
+└── scripts/deploy.sh    ← deploy manual legado do antigo notebook
 ```
 
 Todo o conteúdo (texto, paleta, espaçamentos) vive em `site/sections.jsx`. A paleta padrão é `salvia` (verde sálvia + bege + ink escuro). O export inclui também `terracota` e `ceu` se um dia quiser switchar.
@@ -26,15 +26,10 @@ python3 -m http.server 4321
 
 ## Deploy
 
-```bash
-./scripts/deploy.sh
-```
-
-Pré-requisitos:
-- SSH alias `notebook` configurado e acessível.
-- Stack `catai-landing` rodando no servidor (ver [`../infra/server/catai-landing/`](../infra/server/catai-landing/)).
-
-O Caddy do servidor lê o volume direto, sem precisar reload — cada deploy é instantâneo.
+Push em `main` executa `.github/workflows/deploy.yml`. Após os testes, o
+Environment `production` exige aprovação e o runner do Oracle publica a nova
+release. Ver [`../infra/server/catai-landing/`](../infra/server/catai-landing/)
+para configuração e diagnóstico.
 
 ## Editar conteúdo
 
