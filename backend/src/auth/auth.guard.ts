@@ -11,7 +11,7 @@ import { Reflector } from '@nestjs/core';
 import { RequestWithFirebaseUser } from './decorators/current-firebase-user.decorator';
 import { REQUIRE_EMAIL_VERIFIED_KEY } from './decorators/require-email-verified.decorator';
 import { FirebaseAdminTokenValidator } from './firebase-admin-token-validator';
-import { FirebaseTokenValidator } from './firebase-token-validator';
+import { FirebaseTokenValidator } from './auth.types';
 
 @Injectable()
 export class AuthGuard implements CanActivate {

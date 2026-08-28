@@ -1,0 +1,45 @@
+name: Deploy Catai to Oracle
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catai-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: frontend/collector/go.mod
+          cache: false
+      - name: Test collector
+        working-directory: frontend/collector
+        run: go test ./...
+      - name: Validate landing
+        run: |
+          test -s frontend/site/index.html
+          test -s frontend/site/feedback.html
+
+  deploy:
+    needs: verify
+    runs-on:
+      group: oracle-production
+      labels: [self-hosted, linux, arm64, oracle-production]
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build ARM64 collector and deploy
+        run: |
+          sudo /usr/local/sbin/oracle-deployctl \
+            deploy catai "$GITHUB_SHA" "$GITHUB_WORKSPACE"

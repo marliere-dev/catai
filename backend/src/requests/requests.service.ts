@@ -12,24 +12,15 @@ import { In, Repository } from 'typeorm';
 
 import { LocationService } from '../location/location.service';
 import { StorageService } from '../storage/storage.service';
-import { UserRole } from '../users/user-role.enum';
 import { User } from '../users/user.entity';
 import { CollectionRequest } from './collection-request.entity';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { ListAvailableRequestsQuery } from './dto/list-available-requests.query';
 import { RequestImage } from './request-image.entity';
-import { RequestStatus } from './request-status.enum';
+import { AvailableRequest, RequestStatus, UploadedImage } from './request.types';
 
 const DEFAULT_RADIUS_KM = 10;
 const AVAILABLE_LIMIT = 200;
-
-export interface UploadedImage {
-  buffer: Buffer;
-  mimetype: string;
-  size: number;
-}
-
-export type AvailableRequest = CollectionRequest & { distanceKm: number };
 
 @Injectable()
 export class RequestsService {
@@ -54,9 +45,6 @@ export class RequestsService {
     dto: CreateRequestDto,
     file: UploadedImage | undefined,
   ): Promise<CollectionRequest> {
-    if (creator.role !== UserRole.OWNER) {
-      throw new ForbiddenException('Only owners can create collection requests');
-    }
     if (!file) {
       throw new BadRequestException('An image is required to create a collection request');
     }
@@ -112,12 +100,9 @@ export class RequestsService {
   }
 
   async listAvailable(
-    collector: User,
+    _collector: User,
     query: ListAvailableRequestsQuery,
   ): Promise<AvailableRequest[]> {
-    if (collector.role !== UserRole.COLLECTOR) {
-      throw new ForbiddenException('Only collectors can browse available requests');
-    }
     const radiusKm = query.radiusKm ?? DEFAULT_RADIUS_KM;
     const rows = await this.requests.find({
       where: { status: In([RequestStatus.OPEN, RequestStatus.RESERVED]) },
@@ -149,10 +134,6 @@ export class RequestsService {
   }
 
   async reserve(collector: User, id: string): Promise<CollectionRequest> {
-    if (collector.role !== UserRole.COLLECTOR) {
-      throw new ForbiddenException('Only collectors can reserve requests');
-    }
-
     const existing = await this.requests.findOne({ where: { id } });
     if (!existing) {
       throw new NotFoundException('Request not found');

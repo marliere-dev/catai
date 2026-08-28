@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 
-import { FirebaseTokenValidator, FirebaseUser } from '../firebase-token-validator';
+import { FirebaseTokenValidator, FirebaseUser } from '../auth.types';
 
 @Injectable()
 export class FakeFirebaseTokenValidator implements FirebaseTokenValidator {

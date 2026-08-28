@@ -1,0 +1,42 @@
+name: catai-landing
+
+services:
+  collector:
+    image: catai-landing-collector:${COLLECTOR_TAG:-v0.1.0}
+    container_name: catai-collector
+    restart: unless-stopped
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      RATE_LIMIT_PER_IP_PER_HOUR: ${RATE_LIMIT_PER_IP_PER_HOUR:-10}
+      JSONL_PATH: /data/contacts.jsonl
+    volumes:
+      - ./data:/data
+    networks:
+      - catai-net
+    cpus: 0.25
+    mem_limit: 128m
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: catai-caddy
+    restart: unless-stopped
+    depends_on:
+      - collector
+    environment:
+      SITE_TAG: ${SITE_TAG}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./releases:/var/www/releases:ro
+    networks:
+      - catai-net
+      - npm
+    cpus: 0.25
+    mem_limit: 128m
+
+networks:
+  catai-net:
+    driver: bridge
+  npm:
+    external: true
+    name: nginx-proxy-manager_default

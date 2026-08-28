@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { App, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
-import { FirebaseTokenValidator, FirebaseUser } from './firebase-token-validator';
+import { FirebaseTokenValidator, FirebaseUser } from './auth.types';
 
 @Injectable()
 export class FirebaseAdminTokenValidator implements FirebaseTokenValidator {

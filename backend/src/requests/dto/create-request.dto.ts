@@ -9,8 +9,7 @@ import {
   Length,
 } from 'class-validator';
 
-import { MaterialType } from '../material-type.enum';
-import { QuantityEstimate } from '../quantity-estimate.enum';
+import { MaterialType, QuantityEstimate } from '../request.types';
 
 export class CreateRequestDto {
   @IsEnum(MaterialType)

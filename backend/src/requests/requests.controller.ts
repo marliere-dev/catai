@@ -19,13 +19,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentFirebaseUser } from '../auth/decorators/current-firebase-user.decorator';
 import { RequireEmailVerified } from '../auth/decorators/require-email-verified.decorator';
-import { FirebaseUser } from '../auth/firebase-token-validator';
+import { FirebaseUser } from '../auth/auth.types';
 import { UsersService } from '../users/users.service';
 import { CollectionRequest } from './collection-request.entity';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { ListAvailableRequestsQuery } from './dto/list-available-requests.query';
 import { RequestImage } from './request-image.entity';
-import { AvailableRequest, RequestsService } from './requests.service';
+import { AvailableRequest } from './request.types';
+import { RequestsService } from './requests.service';
 
 @Controller('requests')
 @UseGuards(AuthGuard)

@@ -1,7 +1,7 @@
 import { ExecutionContext, createParamDecorator } from '@nestjs/common';
 import { Request } from 'express';
 
-import { FirebaseUser } from '../firebase-token-validator';
+import { FirebaseUser } from '../auth.types';
 
 export interface RequestWithFirebaseUser extends Request {
   firebaseUser?: FirebaseUser;

@@ -69,15 +69,13 @@ O MVP não deve implementar navegação própria dentro do aplicativo.
 
 ## Escopo do MVP
 
-### Perfis de usuário
+### Funções dentro de uma solicitação
 
-Existem dois perfis principais:
+O Cataí não trata "ser dono de reciclável" nem "ser catador" como **identidade do usuário** — qualquer pessoa autenticada pode tanto criar uma solicitação quanto coletar. Quem assume cada função fica registrado **na solicitação**, não no perfil:
 
-#### 1. Dono de reciclável
+#### Criador da solicitação
 
-Representa quem cria solicitações de coleta.
-
-Exemplos:
+Quem publicou a solicitação de coleta. Costuma ser:
 
 - Bar
 - Restaurante
@@ -86,10 +84,13 @@ Exemplos:
 - Escritório
 - Pequeno comércio
 - Estabelecimento com recicláveis disponíveis
+- Qualquer pessoa com material acumulado em casa
 
-#### 2. Catador
+#### Catador da solicitação
 
-Representa quem visualiza solicitações disponíveis, reserva uma solicitação e realiza a coleta.
+Quem reserva uma solicitação aberta e realiza a coleta. Pode ser um catador profissional, uma cooperativa, ou até o próprio criador (se ele decidir levar pelo próprio meio).
+
+> Manter o app fluido: a mesma pessoa pode criar uma solicitação hoje e coletar a de outra pessoa amanhã. Sem trocar de conta, sem escolher "perfil".
 
 ---
 
@@ -102,7 +103,6 @@ Todos os usuários devem ter:
 - Nome
 - E-mail
 - Senha
-- Tipo de perfil
 
 ### Não solicitar no MVP
 
@@ -300,7 +300,6 @@ Responsável por:
 - Criar perfil interno do usuário
 - Buscar perfil atual
 - Editar dados básicos
-- Definir tipo de perfil
 - Desativar conta, se necessário
 
 ### RequestsModule
@@ -346,14 +345,16 @@ Responsável por:
 
 ## Mobile
 
-### Perfil: Dono de reciclável
+A experiência deve ser extremamente simples. Sem escolher "perfil" no cadastro — o mesmo usuário pode criar uma solicitação hoje e coletar a de outra pessoa amanhã.
 
-A experiência deve ser extremamente simples.
+### Tela inicial
 
-Tela principal com dois botões:
+Dois caminhos lado a lado, ambos disponíveis pra qualquer usuário:
 
-1. Nova solicitação
-2. Minhas solicitações
+1. **Tenho recicláveis** — atalho pra Nova solicitação.
+2. **Quero coletar** — atalho pra Lista/Mapa de pedidos próximos.
+
+Mais um atalho pra **Minhas atividades** (mistura solicitações criadas + reservadas).
 
 ### Nova solicitação
 
@@ -367,9 +368,9 @@ Formulário simples contendo:
 
 Não pedir endereço fixo no cadastro.
 
-### Minhas solicitações
+### Minhas atividades
 
-Listar solicitações criadas pelo usuário com status:
+Listar tanto solicitações criadas pelo usuário quanto solicitações reservadas pelo mesmo. Cada item mostra status:
 
 - Aberta
 - Reservada
@@ -377,19 +378,11 @@ Listar solicitações criadas pelo usuário com status:
 - Cancelada
 - Expirada
 
----
+Permite filtrar por "criadas por mim" / "que aceitei" se útil.
 
-### Perfil: Catador
+### Lista de pedidos próximos
 
-Telas principais:
-
-1. Lista de pedidos
-2. Mapa
-3. Perfil/configurações
-
-### Lista de pedidos
-
-Exibir solicitações disponíveis próximas.
+Exibir solicitações disponíveis (status OPEN) ordenadas por proximidade.
 
 Cada item deve mostrar:
 
@@ -412,7 +405,6 @@ Manter simples:
 
 - Nome
 - E-mail
-- Tipo de perfil
 - Sair da conta
 
 ---
@@ -457,11 +449,11 @@ Nenhuma regra de negócio importante deve ser implementada sem teste.
 Exemplos de regras que precisam de teste:
 
 - Usuário não autenticado não acessa rota protegida.
-- Usuário só pode criar solicitação se tiver e-mail validado.
-- Catador só pode reservar solicitação OPEN.
-- Solicitação RESERVED não pode ser reservada por outro catador.
+- Usuário só pode criar ou reservar solicitação se tiver e-mail validado.
+- Solicitação só pode ser reservada quando estiver com status OPEN.
+- Solicitação RESERVED não pode ser reservada por outro usuário.
 - Apenas o criador pode cancelar sua solicitação.
-- Apenas catador reservado pode concluir a solicitação.
+- Apenas o catador reservado ou o criador pode concluir a solicitação.
 - Solicitação expirada não pode ser reservada.
 - Imagem acima do limite deve ser rejeitada.
 - Localização inválida deve ser rejeitada.
@@ -772,16 +764,15 @@ O MVP está funcional quando:
 
 1. Usuário consegue criar conta com e-mail/senha.
 2. Usuário consegue validar e-mail.
-3. Usuário escolhe perfil.
-4. Dono de reciclável consegue criar solicitação com localização e imagem.
-5. Dono de reciclável consegue ver suas solicitações.
-6. Catador consegue ver solicitações disponíveis.
-7. Catador consegue reservar uma solicitação.
-8. Catador consegue abrir rota externa até o local.
-9. Catador consegue marcar como concluída.
-10. Criador consegue cancelar solicitação aberta.
-11. Backend protege rotas e permissões.
-12. Testes principais passam.
+3. Usuário consegue criar solicitação com localização e imagem.
+4. Usuário consegue ver suas solicitações.
+5. Usuário consegue ver solicitações disponíveis próximas.
+6. Usuário consegue reservar uma solicitação.
+7. Usuário reservado consegue abrir rota externa até o local.
+8. Usuário reservado ou criador consegue marcar como concluída.
+9. Criador consegue cancelar solicitação aberta.
+10. Backend protege rotas e permissões (autenticação + e-mail validado + ownership).
+11. Testes principais passam.
 
 ---
 
