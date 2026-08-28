@@ -18,6 +18,26 @@ Cloudflare Tunnel → NPM → catai-caddy → landing/collector
 - O build usa no máximo 1 CPU e 3 GB e não concorre com outro deploy.
 - Falha de health check restaura as tags anteriores.
 
+## Organização dos containers
+
+O agrupamento deste deployment é o projeto Compose `catai-landing`, cuja
+configuração ativa fica em `/srv/apps/catai`. A rede `catai-net` é privada ao
+collector e ao Caddy. Apenas `catai-caddy`, a borda HTTP da landing, também
+participa da rede externa `nginx-proxy-manager_default` (`npm`) para receber o
+tráfego encaminhado pelo Nginx Proxy Manager. Não há portas Docker publicadas
+no host.
+
+O `backend/docker-compose.yml` é um Compose local de desenvolvimento e não
+faz parte desse deployment de produção. Para consultar somente os containers
+da landing no Oracle:
+
+```bash
+sudo docker compose --project-directory /srv/apps/catai \
+  --env-file /srv/apps/catai/.env \
+  --env-file /srv/apps/catai/.release.env \
+  -f /srv/apps/catai/compose.yml ps
+```
+
 ## Preparação única do GitHub
 
 1. Transferir `catai` para `marliere-dev`.
