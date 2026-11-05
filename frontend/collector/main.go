@@ -13,6 +13,13 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == healthcheckArg {
+		if err := runHealthcheck(envOr("ADDR", ":8081")); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
 	logger := log.New(os.Stdout, "[collector] ", log.LstdFlags|log.LUTC)
 
 	cfg := loadConfig(logger)
