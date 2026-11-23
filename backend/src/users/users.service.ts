@@ -25,7 +25,7 @@ export class UsersService {
     const created = this.users.create({
       firebaseUid: firebaseUser.uid,
       email: firebaseUser.email,
-      name: firebaseUser.email.split('@')[0] ?? 'User',
+      name: firebaseUser.name?.trim() || firebaseUser.email.split('@')[0] || 'User',
       disabledAt: null,
     });
     return this.users.save(created);

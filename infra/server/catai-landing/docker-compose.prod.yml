@@ -14,20 +14,27 @@ services:
       - ./data:/data
     networks:
       - catai-net
+      - npm
     cpus: 0.25
     mem_limit: 128m
 
-  caddy:
-    image: caddy:2-alpine
-    container_name: catai-caddy
+  web:
+    image: nginx:1.27-alpine
+    container_name: catai-web
     restart: unless-stopped
     depends_on:
       - collector
     environment:
       SITE_TAG: ${SITE_TAG}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ./releases:/var/www/releases:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
     networks:
       - catai-net
       - npm

@@ -6,14 +6,15 @@ em releases por SHA; o collector é construído nativamente para ARM64.
 ```text
 GitHub Actions → oracle-deployctl → collector ARM64 + release estática
                                       ↓
-Cloudflare Tunnel → NPM → catai-caddy → landing/collector
+Cloudflare Tunnel → NPM → catai-web / catai-collector
 ```
 
 ## Segurança e recursos
 
 - O runner não acessa o socket Docker diretamente.
 - Somente `oracle-deployctl deploy catai <SHA> <WORKSPACE>` é permitido.
-- Compose, Caddyfile, `.env` e dados ficam em `/srv/apps/catai` sob controle
+- Compose, configuração do Nginx estático, `.env` e dados ficam em
+  `/srv/apps/catai` sob controle
   administrativo.
 - O build usa no máximo 1 CPU e 3 GB e não concorre com outro deploy.
 - Falha de health check restaura as tags anteriores.
@@ -33,8 +34,10 @@ Cloudflare Tunnel → NPM → catai-caddy → landing/collector
 sudo install -o root -g root -m 0644 \
   infra/server/catai-landing/docker-compose.prod.yml \
   /srv/apps/catai/compose.yml
+sudo install -d -o root -g root -m 0755 /srv/apps/catai/nginx
 sudo install -o root -g root -m 0644 \
-  infra/server/catai-landing/Caddyfile /srv/apps/catai/Caddyfile
+  infra/server/catai-landing/nginx/default.conf.template \
+  /srv/apps/catai/nginx/default.conf.template
 sudo install -o root -g root -m 0600 \
   infra/server/catai-landing/.env.example /srv/apps/catai/.env
 sudoedit /srv/apps/catai/.env
@@ -47,7 +50,8 @@ dispatcher.
 No Nginx Proxy Manager, criar:
 
 ```text
-catai.marliere.dev → http://catai-caddy:80
+catai.marliere.dev → http://catai-web:80
+  Custom Location /api/ → http://catai-collector:8081/ (remover /api)
 ```
 
 Não publicar portas e não iniciar outro `cloudflared`.
@@ -77,6 +81,6 @@ sudo docker compose \
 
 journalctl -t oracle-deployctl -n 100 --no-pager
 docker logs catai-collector --tail 100
-docker logs catai-caddy --tail 100
+docker logs catai-web --tail 100
 find /srv/apps/catai/releases -mindepth 1 -maxdepth 1 -type d
 ```

@@ -46,6 +46,7 @@ export class FirebaseAdminTokenValidator implements FirebaseTokenValidator {
         uid: decoded.uid,
         email: decoded.email,
         emailVerified: decoded.email_verified === true,
+        name: typeof decoded.name === 'string' ? decoded.name : undefined,
       };
     } catch (err) {
       this.logger.warn(`Token verification failed: ${(err as Error).message}`);

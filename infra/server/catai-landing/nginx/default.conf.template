@@ -1,0 +1,39 @@
+server {
+    listen 80;
+    server_name _;
+
+    root /var/www/releases/${SITE_TAG};
+    index index.html;
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+    location ~* ^/(?:_astro|assets)/ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=604800, immutable" always;
+    }
+
+    location = / {
+        try_files /index.html =404;
+        add_header Cache-Control "no-cache, must-revalidate" always;
+    }
+
+    location = /index.html {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache, must-revalidate" always;
+    }
+
+    location = /feedback {
+        try_files /feedback.html =404;
+        add_header Cache-Control "no-cache, must-revalidate" always;
+    }
+
+    location = /feedback.html {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache, must-revalidate" always;
+    }
+
+    location / {
+        try_files $uri $uri/ $uri.html =404;
+    }
+}

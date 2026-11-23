@@ -16,6 +16,14 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   const config = app.get(ConfigService);
+  const isDev = (config.get<string>('NODE_ENV') ?? 'development') !== 'production';
+  app.enableCors({
+    origin: isDev ? true : (config.get<string>('CORS_ORIGINS') ?? '').split(',').filter(Boolean),
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type'],
+  });
+
   const port = Number(config.get<string>('PORT') ?? 3000);
   await app.listen(port);
 }

@@ -40,6 +40,9 @@ coverage/
 # Postgres data volume
 **/postgres-data/
 
+# Backend disk-mode image storage
+backend/data/
+
 # Local prompts and scratchpads
 /landing-page-prompt.md
 /app-design-prompt.md

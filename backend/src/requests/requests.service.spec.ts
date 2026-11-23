@@ -605,6 +605,41 @@ describe('RequestsService', () => {
     });
   });
 
+  describe('listReservedByMe', () => {
+    it('retorna apenas RESERVED do próprio catador', async () => {
+      const { service } = buildService();
+      const owner = buildUser({ id: 'u-o' });
+      const collectorA = buildUser({ id: 'u-c-a' });
+      const collectorB = buildUser({ id: 'u-c-b' });
+
+      const r1 = await service.create(owner, baseDto, buildFile());
+      const r2 = await service.create(owner, baseDto, buildFile());
+      await service.create(owner, baseDto, buildFile()); // r3 fica OPEN
+
+      await service.reserve(collectorA, r1.id);
+      await service.reserve(collectorB, r2.id);
+
+      const fromA = await service.listReservedByMe(collectorA);
+      expect(fromA.map((r) => r.id)).toEqual([r1.id]);
+
+      const fromB = await service.listReservedByMe(collectorB);
+      expect(fromB.map((r) => r.id)).toEqual([r2.id]);
+    });
+
+    it('omite reservas expiradas (lazy expiry)', async () => {
+      const { service, repo } = buildService();
+      const owner = buildUser({ id: 'u-o' });
+      const collector = buildUser({ id: 'u-c' });
+      const created = await service.create(owner, baseDto, buildFile());
+      const reserved = await service.reserve(collector, created.id);
+      reserved.reservedUntil = new Date(Date.now() - 1_000);
+      await repo.save(reserved);
+
+      const results = await service.listReservedByMe(collector);
+      expect(results).toHaveLength(0);
+    });
+  });
+
   describe('findOne', () => {
     it('throws NotFoundException for unknown ids', async () => {
       const { service } = buildService();

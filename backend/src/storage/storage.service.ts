@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { promises as fs } from 'node:fs';
+import * as path from 'node:path';
 
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import {
@@ -20,12 +22,16 @@ export interface AssertedImage {
   ext: AllowedExt;
 }
 
+type StorageMode = 'r2' | 'disk' | 'memory';
+
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
+  private readonly mode: StorageMode;
   private readonly bucket: string | null;
   private readonly publicBaseUrl: string;
   private readonly client: S3Client | null;
+  private readonly localDir: string | null;
 
   private readonly memoryObjects = new Map<string, Buffer>();
   private readonly putKeys: string[] = [];
@@ -33,6 +39,7 @@ export class StorageService {
 
   constructor(config: ConfigService) {
     const bucket = config.get<string>('R2_BUCKET');
+    const localDir = config.get<string>('STORAGE_LOCAL_DIR');
     if (bucket) {
       const accountId = config.get<string>('R2_ACCOUNT_ID');
       const accessKeyId = config.get<string>('R2_ACCESS_KEY_ID');
@@ -43,6 +50,7 @@ export class StorageService {
           'R2_BUCKET set but R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, or R2_PUBLIC_BASE_URL is missing',
         );
       }
+      this.mode = 'r2';
       this.bucket = bucket;
       this.publicBaseUrl = publicBaseUrl.replace(/\/$/, '');
       this.client = new S3Client({
@@ -50,18 +58,35 @@ export class StorageService {
         endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
         credentials: { accessKeyId, secretAccessKey },
       });
+      this.localDir = null;
       this.logger.log(`StorageService mode=r2 bucket=${bucket}`);
+    } else if (localDir) {
+      this.mode = 'disk';
+      this.bucket = null;
+      this.client = null;
+      this.localDir = path.resolve(localDir);
+      const baseUrl =
+        config.get<string>('STORAGE_LOCAL_BASE_URL') ?? 'http://localhost:3000/storage/local';
+      this.publicBaseUrl = baseUrl.replace(/\/$/, '');
+      // Cria o dir lazy, na primeira escrita.
+      this.logger.log(`StorageService mode=disk dir=${this.localDir}`);
     } else {
       if (config.get<string>('NODE_ENV') === 'production') {
         throw new Error(
           'StorageService refuses to start in memory mode under NODE_ENV=production. Populate R2_BUCKET and credentials.',
         );
       }
+      this.mode = 'memory';
       this.bucket = null;
       this.publicBaseUrl = 'http://localhost/fake-r2';
       this.client = null;
+      this.localDir = null;
       this.logger.log('StorageService mode=memory (R2_BUCKET unset)');
     }
+  }
+
+  getLocalDir(): string | null {
+    return this.localDir;
   }
 
   assertImageBuffer(buffer: Buffer, declaredMime: string, size: number): AssertedImage {
@@ -93,7 +118,7 @@ export class StorageService {
   }
 
   async putImage(buffer: Buffer, contentType: AllowedMime, key: string): Promise<{ url: string }> {
-    if (this.client && this.bucket) {
+    if (this.mode === 'r2' && this.client && this.bucket) {
       await this.client.send(
         new PutObjectCommand({
           Bucket: this.bucket,
@@ -102,6 +127,10 @@ export class StorageService {
           ContentType: contentType,
         }),
       );
+    } else if (this.mode === 'disk' && this.localDir) {
+      const filePath = path.join(this.localDir, key);
+      await fs.mkdir(path.dirname(filePath), { recursive: true });
+      await fs.writeFile(filePath, buffer);
     } else {
       // Memory-mode bookkeeping is intentionally scoped to !R2: in R2 mode
       // the source of truth is Cloudflare and there is no in-memory state to
@@ -113,8 +142,13 @@ export class StorageService {
   }
 
   async deleteImage(key: string): Promise<void> {
-    if (this.client && this.bucket) {
+    if (this.mode === 'r2' && this.client && this.bucket) {
       await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    } else if (this.mode === 'disk' && this.localDir) {
+      const filePath = path.join(this.localDir, key);
+      await fs.unlink(filePath).catch((err: NodeJS.ErrnoException) => {
+        if (err.code !== 'ENOENT') throw err;
+      });
     } else {
       this.memoryObjects.delete(key);
       this.deletedKeys.push(key);

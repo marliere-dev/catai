@@ -93,6 +93,27 @@ describe('UsersService', () => {
       });
       expect(refreshed.email).toBe('new@example.com');
     });
+
+    it('uses the displayName from Firebase when present', async () => {
+      const { service } = buildService();
+      const created = await service.ensureFromFirebase({
+        uid: 'fb-2',
+        email: 'gabrielmarliere2005@gmail.com',
+        emailVerified: true,
+        name: 'Gabriel Souza',
+      });
+      expect(created.name).toBe('Gabriel Souza');
+    });
+
+    it('falls back to email prefix when Firebase has no displayName', async () => {
+      const { service } = buildService();
+      const created = await service.ensureFromFirebase({
+        uid: 'fb-3',
+        email: 'maria@example.com',
+        emailVerified: true,
+      });
+      expect(created.name).toBe('maria');
+    });
   });
 
   describe('update', () => {

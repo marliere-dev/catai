@@ -63,6 +63,12 @@ export class RequestsController {
     return this.requests.listAvailable(user, query);
   }
 
+  @Get('reserved-by-me')
+  async listReservedByMe(@CurrentFirebaseUser() fb: FirebaseUser): Promise<CollectionRequest[]> {
+    const user = await this.users.ensureFromFirebase(fb);
+    return this.requests.listReservedByMe(user);
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<CollectionRequest> {
     return this.requests.findOne(id);

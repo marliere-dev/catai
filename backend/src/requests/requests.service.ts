@@ -99,6 +99,20 @@ export class RequestsService {
     return Promise.all(rows.map((row) => this.applyLazyExpiry(row)));
   }
 
+  async listReservedByMe(user: User): Promise<CollectionRequest[]> {
+    const rows = await this.requests.find({
+      where: { reservedByUserId: user.id, status: RequestStatus.RESERVED },
+      order: { reservedUntil: 'ASC' },
+      relations: { image: true },
+    });
+    // applyLazyExpiry pode reverter rows expirados pra OPEN; depois disso
+    // filtramos pra só devolver os que continuam RESERVED pelo catador.
+    const refreshed = await Promise.all(rows.map((row) => this.applyLazyExpiry(row)));
+    return refreshed.filter(
+      (row) => row.status === RequestStatus.RESERVED && row.reservedByUserId === user.id,
+    );
+  }
+
   async listAvailable(
     _collector: User,
     query: ListAvailableRequestsQuery,
